@@ -1,6 +1,6 @@
 {
   "name": "dsh-lumea",
-  "version": "0.56.0",
+  "version": "0.56.1",
   "description": "Lumea для DeepSeek Harness: MCP-сервер, скиллы и предохранители перед отправкой клиентам",
   "private": true,
   "exports": {
