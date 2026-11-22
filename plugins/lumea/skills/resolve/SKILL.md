@@ -6,7 +6,7 @@ argument-hint: '<slug | #iid> [проект] [суть фикса]'
 
 # Resolve — волна закрыта
 
-Аргументы: `$ARGUMENTS` — slug кейса или номер issue (`42`, `#42`; `!42` тоже принимается — в GitLab `!` означает MR, но пользователи так пишут), затем суть фикса (что сделано, что нужно от клиента). Процесс — `${CLAUDE_PLUGIN_ROOT}/skills/lumea/reference/workflows.md`, раздел «Resolve».
+Аргументы: `$ARGUMENTS` — slug кейса или номер issue (`42`, `#42`; `!42` тоже принимается — в GitLab `!` означает MR, но пользователи так пишут), затем суть фикса (что сделано, что нужно от клиента). Процесс — `${CLAUDE_PLUGIN_ROOT}/skills/lumea/reference/workflows.md` (если `${CLAUDE_PLUGIN_ROOT}` не подставлен — относительно каталога этого скилла: `../lumea/reference/workflows.md`), раздел «Resolve».
 
 1. Выборка:
    - Кейс: `list_tickets { tags: ['case:<slug>'], includeClosed: true, perPage: 100 }` (`hasMore: true` → повторить с `page: 2` и дальше, пока не `false`); ref — `#` + первые 8 символов `id`, первая группа uuid (отдельного поля нет), имя клиента — прямо из ответа (`tickets[].client.name`), отдельно не искать.

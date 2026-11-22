@@ -1,0 +1,73 @@
+# Бандл Lumea для DeepSeek Harness (dsh): тот же каталог, что и плагин для
+# Claude Code. Три слоя — MCP-сервер, хуки-предохранители и скиллы; файлы не
+# дублируются: хуки и скиллы читаются прямо из hooks/ и skills/ этого пакета.
+- insert:
+    # MCP-сервер Lumea. Имя `lumea` обязательно: матчеры hooks.json ловят
+    # инструменты `mcp__lumea__…`. Слой выключен (dsh стартует как обычно, просто
+    # без инструментов Lumea), если не заданы LUMEA_URL и LUMEA_ACCESS_KEY ИЛИ
+    # предохранители отправки не гарантированы (fail-closed): без них пишущие
+    # инструменты ушли бы клиентам без подтверждения. Проверяется три вещи:
+    #   1. мост хуков и два его рантайм-пира (профиль сам их не ставит,
+    #      autoInstallPeers: false) лежат в node_modules вверх от каталога
+    #      профиля — так их найдёт Cordis, он грузит плагин-строку ESM-импортом
+    #      от baseUrl; через require.resolve нельзя, пакеты ESM-only;
+    #   2. hooks.json находится тем же путём, что в строке lumea-hooks, читается
+    #      и разбирается как JSON;
+    #   3. в PreToolUse есть матчер на send_message, и каждый matcher в
+    #      Pre/PostToolUse компилируется (невалидный regex роняет весь конфиг
+    #      хуков молча); `*`, пустой и отсутствующий — «любой», как в
+    #      hook-protocol. Выражение не бросает: любой сбой даёт true.
+    - id: lumea-mcp
+      name: '@deepseek-ai/dsh-mcp-client'
+      disabled: !!js >-
+        !process.env.LUMEA_URL || !process.env.LUMEA_ACCESS_KEY ||
+        (() => {
+          try {
+            const fs = process.getBuiltinModule('node:fs'), path = process.getBuiltinModule('node:path')
+            const hasPackage = pkg => {
+              for (let dir = process.getBuiltinModule('node:url').fileURLToPath(baseUrl); ; dir = path.dirname(dir)) {
+                if (fs.existsSync(path.join(dir, 'node_modules', pkg, 'package.json'))) return true
+                if (path.dirname(dir) === dir) return false
+              }
+            }
+            if (!['@deepseek-ai/dsh-hooks-claude-code', '@deepseek-ai/dsh-hook-protocol', '@deepseek-ai/dsh-llm'].every(hasPackage)) return true
+            const hooks = JSON.parse(fs.readFileSync(process.getBuiltinModule('node:module').createRequire(baseUrl).resolve('dsh-lumea/hooks.json'), 'utf8')).hooks
+            const matchAll = m => m === undefined || m === '' || m === '*'
+            const matches = (m, name) => matchAll(m) || (/^[A-Za-z0-9_|]+$/.test(m) ? m.split('|').includes(name) : new RegExp(m).test(name))
+            const pre = hooks.PreToolUse, post = hooks.PostToolUse ?? []
+            for (const group of [...pre, ...post]) matches(group.matcher, '')
+            return !pre.some(group => !matchAll(group.matcher) && matches(group.matcher, 'mcp__lumea__send_message'))
+          } catch { return true }
+        })()
+      config:
+        serverName: lumea
+        transport: streamable-http
+        # Хвостовые «/» и уже дописанный /api/mcp срезаются; заглушка нужна, чтобы
+        # выражение не бросало, пока слой выключен.
+        url: !!js "(process.env.LUMEA_URL || 'https://lumea.invalid').replace(/\\/+$/, '').replace(/\\/api\\/mcp$/, '').replace(/\\/+$/, '') + '/api/mcp'"
+        headers:
+          Authorization: !!js "`Bearer ${process.env.LUMEA_ACCESS_KEY ?? ''}`"
+        toolLoading: eager
+        startupTimeoutMs: 15000
+        failOnStartupError: false
+
+    # Хуки Claude Code из hooks/hooks.json: подтверждение перед отправкой
+    # клиенту и прочими пишущими вызовами, отчёт о недоставленных. Не
+    # отключаем без переменных: session-start.sh как раз подсказывает про них.
+    # hooks.json находим через exports пакета, pluginRoot — на два уровня выше
+    # (hooks/hooks.json → корень пакета).
+    - id: lumea-hooks
+      name: '@deepseek-ai/dsh-hooks-claude-code'
+      config:
+        configPath: !!js "process.getBuiltinModule('node:module').createRequire(baseUrl).resolve('dsh-lumea/hooks.json')"
+        pluginRoot: !!js "process.getBuiltinModule('node:path').dirname(process.getBuiltinModule('node:path').dirname(process.getBuiltinModule('node:module').createRequire(baseUrl).resolve('dsh-lumea/hooks.json')))"
+
+    # Скиллы Lumea (lumea, case, collect, …) отдельным провайдером, чтобы не
+    # смешиваться с остальными корнями скиллов.
+    - id: lumea-skills
+      name: '@deepseek-ai/dsh-skill-filesystem'
+      config:
+        providerName: lumea
+        includeDefaultRoots: false
+        customSkillDirs:
+          - !!js "process.getBuiltinModule('node:path').join(process.getBuiltinModule('node:path').dirname(process.getBuiltinModule('node:path').dirname(process.getBuiltinModule('node:module').createRequire(baseUrl).resolve('dsh-lumea/hooks.json'))), 'skills')"

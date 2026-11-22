@@ -1,0 +1,31 @@
+{
+  "name": "dsh-lumea",
+  "version": "0.56.0",
+  "description": "Lumea для DeepSeek Harness: MCP-сервер, скиллы и предохранители перед отправкой клиентам",
+  "private": true,
+  "exports": {
+    "./package.json": "./package.json",
+    "./hooks.json": "./plugins/lumea/hooks/hooks.json"
+  },
+  "files": [
+    "plugins/lumea/cordis.patch.yml",
+    "plugins/lumea/hooks/",
+    "!plugins/lumea/hooks/**/*.test.ts",
+    "plugins/lumea/skills/",
+    "plugins/lumea/locale/",
+    "plugins/lumea/README.md"
+  ],
+  "engines": {
+    "dsh": ">=0.2.2-rc.5 <0.3.0"
+  },
+  "dependencies": {
+    "@deepseek-ai/dsh-hook-protocol": "0.2.2-rc.5",
+    "@deepseek-ai/dsh-hooks-claude-code": "0.2.2-rc.5",
+    "@deepseek-ai/dsh-llm": "0.2.2-rc.5"
+  },
+  "dsh": {
+    "bundle": {
+      "patch": "./plugins/lumea/cordis.patch.yml"
+    }
+  }
+}

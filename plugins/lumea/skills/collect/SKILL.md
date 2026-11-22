@@ -6,7 +6,7 @@ argument-hint: <slug> <что нужно от клиентов> | status <slug> 
 
 # Сбор данных у клиентов кейса
 
-Аргументы: `$ARGUMENTS`. Процесс — `${CLAUDE_PLUGIN_ROOT}/skills/lumea/reference/workflows.md`, раздел «Сбор логов».
+Аргументы: `$ARGUMENTS`. Процесс — `${CLAUDE_PLUGIN_ROOT}/skills/lumea/reference/workflows.md` (если `${CLAUDE_PLUGIN_ROOT}` не подставлен — относительно каталога этого скилла: `../lumea/reference/workflows.md`), раздел «Сбор логов».
 
 ## `<slug> <что нужно>`
 
@@ -24,11 +24,14 @@ argument-hint: <slug> <что нужно от клиентов> | status <slug> 
 ## `fetch <slug>`
 
 1. `status`, затем для каждого события с `attachment` — `get_message_media { messageId }` (`messageId` есть в каждом событии `client_message`). Если `status` вернул `truncated: true` — продолжить с `nextSince`, пока не `false`.
-2. По форме ответа `get_message_media` — три случая:
-   - текст ≤ 200 КБ (`structuredContent.inline: true`, контент текстовый) — сохранить как есть в `.lumea/cases/<slug>/<ticketRef без #>-<fileName>` через `Write`;
+2. По форме ответа `get_message_media`:
+   - текст ≤ 64 КБ (`structuredContent.inline: true`, контент текстовый) — сохранить как есть в `.lumea/cases/<slug>/<ticketRef без #>-<fileName>` через `Write`;
    - картинка ≤ 5 МБ (`inline: true`, контент — изображение) — байты не сохранять, описать содержимое в `<ticketRef>-<fileName>.md`;
-   - больше лимита или бинарный файл (`inline: false`, контент — текстовая заметка со ссылкой на CRM) — сохранить `<ticketRef>-<fileName>.md` с этой заметкой и пометкой «больше лимита, скачать через CRM: <ссылка из ответа>»; если файл нужен целиком, его можно скачать тем же ключом из окружения: `curl -H "Authorization: Bearer $LUMEA_ACCESS_KEY" $LUMEA_URL/api/media/<messageId> -o <файл>` (ссылка из ответа — тот же адрес);
+   - всё остальное (`inline: false`, в `structuredContent` есть `download { path, fileName, size, mime }`: большой лог, архив, бинарник, до 20 МБ) — скачать на диск командой `curl` из текста ответа, подставив путь `.lumea/cases/<slug>/<ticketRef без #>-<download.fileName>` в `-o` (ключ и адрес берутся из `$LUMEA_ACCESS_KEY` и `$LUMEA_URL` шелла, команда сама срезает хвостовой `/` и `/api/mcp` у адреса; значения не печатать и не подставлять в команду руками). Перед первой загрузкой `mkdir -p .lumea/cases/<slug>`. Если `LUMEA_URL` или `LUMEA_ACCESS_KEY` в шелле пусты (`[ -n "$LUMEA_URL" ] && [ -n "$LUMEA_ACCESS_KEY" ]`) — остановиться и отправить на `/lumea:setup`. Файл больше 20 МБ (в заметке «качать осознанно») — спросить, качать ли. Если код ответа не 200 или файл пустой — отметить в итоге;
+   - архив (`.zip`, `.tar`, `.tgz`/`.tar.gz`, `.gz`) — источник недоверенный, сначала посмотреть список: `unzip -l <файл>` / `tar -tvf <файл>` (для `.gz` без tar — размер из `gzip -l`). Не распаковывать и пометить в итоге «архив не распакован: <причина>», если суммарный размер больше ~200 МБ, файлов больше 1000 либо есть пути с `..` или абсолютные. Иначе распаковать рядом, в подпапку `<ticketRef без #>-<fileName без расширения>/`: `unzip -o <файл> -d <папка>`, `tar -xf <файл> -C <папка>`, `gunzip -k <файл>`; нет утилиты — оставить архив и сказать об этом;
    - ошибка вызова `get_message_media` — вложение пропустить, отметить в итоге какое и почему.
+
+   Скачанные и распакованные логи читать по частям (`Read` с `offset`/`limit`, `rg -n` по ошибкам и времени), а не целиком: файл на мегабайты не кладётся в контекст.
 
    `attachment.fileName` в событии бывает `null` (не всегда сохранено) — тогда вместо имени файла в пути использовать `messageId`.
 

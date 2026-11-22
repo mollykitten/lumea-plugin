@@ -6,7 +6,7 @@ argument-hint: open <slug> <тикеты…> | add <slug> <тикеты…> | re
 
 # Кейс
 
-Аргументы: `$ARGUMENTS` — подкоманда и параметры. Процесс целиком — в `${CLAUDE_PLUGIN_ROOT}/skills/lumea/reference/workflows.md`, раздел «Кейс»; здесь — что показывать и что спрашивать.
+Аргументы: `$ARGUMENTS` — подкоманда и параметры. Процесс целиком — в `${CLAUDE_PLUGIN_ROOT}/skills/lumea/reference/workflows.md` (если `${CLAUDE_PLUGIN_ROOT}` не подставлен — относительно каталога этого скилла: `../lumea/reference/workflows.md`), раздел «Кейс»; здесь — что показывать и что спрашивать.
 
 **Slug**: латиница, цифры, дефис, до 32 символов; иначе предложить исправленный и спросить.
 

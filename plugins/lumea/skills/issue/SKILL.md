@@ -6,7 +6,7 @@ argument-hint: '<slug | тикет> [#iid]'
 
 # Issue из кейса или тикета
 
-Аргументы: `$ARGUMENTS`. Процесс — `${CLAUDE_PLUGIN_ROOT}/skills/lumea/reference/workflows.md`, раздел «Issue из кейса».
+Аргументы: `$ARGUMENTS`. Процесс — `${CLAUDE_PLUGIN_ROOT}/skills/lumea/reference/workflows.md` (если `${CLAUDE_PLUGIN_ROOT}` не подставлен — относительно каталога этого скилла: `../lumea/reference/workflows.md`), раздел «Issue из кейса».
 
 Номер issue во втором аргументе — `42` или `#42` (`!42` тоже принимается: в GitLab `!` означает MR, но пользователи так пишут).
 
