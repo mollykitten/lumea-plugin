@@ -16,11 +16,11 @@
 Тот же каталог — бандл для [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness): MCP-сервер Lumea, скиллы и хуки-предохранители.
 
 ```
-dsh plugin --profile <профиль> add github:mollybyte/lumea-plugin#v0.56.1
+dsh plugin --profile <профиль> add github:mollybyte/lumea-plugin#v0.56.2
 export LUMEA_URL=https://<адрес Lumea>
 export LUMEA_ACCESS_KEY=lmk_…
 ```
 
 Ограничения, проверка и переменные — в разделе «DeepSeek Harness» файла [plugins/lumea/README.md](plugins/lumea/README.md).
 
-Текущая версия: **0.56.1**.
+Текущая версия: **0.56.2**.
